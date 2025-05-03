@@ -12,3 +12,15 @@ uuid = { version = "1.6.1", features = ["v4"] }
 mongodb = "2.8.0"
 tokio = { version = "1.35.1", features = ["full"] }
 dotenv = "0.15.0"
+
+[profile.release]
+opt-level = 3        # Maksimum optimizasyon seviyesi
+lto = "fat"         # Link Time Optimization
+codegen-units = 1   # Daha iyi optimizasyon için tek bir kod ünitesi
+panic = "abort"     # Panic durumunda programı sonlandır
+strip = true        # Debug sembollerini kaldır
+incremental = false # Artımlı derlemeyi devre dışı bırak
+
+[profile.dev]
+opt-level = 0       # Geliştirme sırasında hızlı derleme için minimum optimizasyon
+debug = true        # Debug bilgilerini ekle
