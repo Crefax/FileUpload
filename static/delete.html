@@ -3,150 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dosya Sil - Dosya Paylaşım Sitesi</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .link-box {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .link-box input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-right: 10px;
-            font-family: monospace;
-        }
-        .copy-button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .copy-button:hover {
-            background: #45a049;
-        }
-        .copy-button.copied {
-            background: #2196F3;
-        }
-    </style>
+    <title>Dosya Sil - Crefax Upload</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/style.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Dosya Sil</h1>
-            <p>Dosya silme onayı</p>
-        </header>
+<body class="bg-dark">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 text-white mb-3">Dosya Sil</h1>
+                    <p class="lead text-muted">Dosyanızı güvenle silin</p>
+                </div>
 
-        <main>
-            <div class="file-details">
-                <div class="file-info">
-                    <h3>Dosya Bilgileri</h3>
-                    <div class="info-content">
-                        <p><strong>Dosya Adı:</strong> <span id="fileName"></span></p>
-                        <p><strong>Boyut:</strong> <span id="fileSize"></span></p>
-                        <p><strong>Yüklenme Tarihi:</strong> <span id="uploadDate"></span></p>
-                        
-                        <div class="link-box">
-                            <input type="text" id="deleteUrl" readonly>
-                            <button class="copy-button" onclick="copyToClipboard('deleteUrl')">Kopyala</button>
+                <div class="card bg-dark border-danger">
+                    <div class="card-body text-center">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+                        <h3 class="text-white mt-3" id="fileName">Dosya Yükleniyor...</h3>
+                        <p class="text-muted" id="fileInfo">Dosya bilgileri yükleniyor...</p>
+                        <div class="alert alert-danger mt-3">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            Bu işlem geri alınamaz! Dosya kalıcı olarak silinecektir.
                         </div>
-
-                        <div class="warning">
-                            <p>⚠️ Bu işlem geri alınamaz!</p>
-                        </div>
-                        <div class="links">
-                            <button onclick="deleteFile()" class="button delete">Dosyayı Sil</button>
-                            <a href="/" class="button secondary">İptal</a>
+                        <div class="mt-4">
+                            <button onclick="deleteFile()" class="btn btn-danger btn-lg px-4">
+                                <i class="bi bi-trash me-2"></i>Dosyayı Sil
+                            </button>
+                            <a href="/" class="btn btn-outline-light btn-lg px-4 ms-2">
+                                <i class="bi bi-arrow-left me-2"></i>Geri Dön
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
-
-        <footer>
-            <p>&copy; 2024 Dosya Paylaşım Sitesi. Tüm hakları saklıdır.</p>
-        </footer>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // URL'den dosya ID'sini al
         const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('id');
+        const deleteId = urlParams.get('id');
 
-        if (!fileId) {
+        if (!deleteId) {
             window.location.href = '/';
         }
 
-        // Dosya bilgilerini al
-        fetch(`/file/${fileId}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('fileName').textContent = data.original_name;
-                document.getElementById('fileSize').textContent = formatFileSize(data.size);
-                document.getElementById('uploadDate').textContent = new Date(data.upload_date).toLocaleString('tr-TR');
-                
-                const deleteUrl = `${window.location.origin}/delete/${fileId}`;
-                document.getElementById('deleteUrl').value = deleteUrl;
-            })
-            .catch(error => {
-                console.error('Hata:', error);
-                alert('Dosya bilgileri alınamadı!');
-                window.location.href = '/';
-            });
-
-        function deleteFile() {
-            if (confirm('Bu dosyayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
-                fetch(`/delete/${fileId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('Dosya başarıyla silindi');
+        async function loadFileInfo() {
+            try {
+                const response = await fetch(`/file/${deleteId}`);
+                if (response.ok) {
+                    const fileInfo = await response.json();
+                    if (fileInfo.delete_id !== deleteId) {
                         window.location.href = '/';
-                    } else {
-                        throw new Error('Dosya silinemedi');
+                        return;
                     }
-                })
-                .catch(error => {
-                    console.error('Silme hatası:', error);
-                    alert('Dosya silinirken bir hata oluştu!');
-                });
+                    document.getElementById('fileName').textContent = fileInfo.original_name;
+                    document.getElementById('fileInfo').textContent = `Yüklenme Tarihi: ${new Date(fileInfo.upload_date * 1000).toLocaleString()}`;
+                } else {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                window.location.href = '/';
             }
         }
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        async function deleteFile() {
+            if (!confirm('Bu dosyayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) return;
+
+            try {
+                const response = await fetch(`/delete/${deleteId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Dosya başarıyla silindi!');
+                    window.location.href = '/';
+                } else {
+                    alert('Dosya silinirken bir hata oluştu!');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Dosya silinirken bir hata oluştu!');
+            }
         }
 
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            element.select();
-            document.execCommand('copy');
-            
-            const button = element.nextElementSibling;
-            button.textContent = 'Kopyalandı!';
-            button.classList.add('copied');
-            
-            setTimeout(() => {
-                button.textContent = 'Kopyala';
-                button.classList.remove('copied');
-            }, 2000);
-        }
+        loadFileInfo();
     </script>
 </body>
 </html> 
