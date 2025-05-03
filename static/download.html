@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dosya İndir - Dosya Paylaşım Sitesi</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .link-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .link-box input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-family: monospace;
+        }
+        .copy-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .copy-button:hover {
+            background: #45a049;
+        }
+        .copy-button.copied {
+            background: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dosya İndir</h1>
+            <p>Dosya bilgileri ve indirme seçenekleri</p>
+        </header>
+
+        <main>
+            <div class="file-details">
+                <div class="file-info">
+                    <h3>Dosya Bilgileri</h3>
+                    <div class="info-content">
+                        <p><strong>Dosya Adı:</strong> <span id="fileName"></span></p>
+                        <p><strong>Boyut:</strong> <span id="fileSize"></span></p>
+                        <p><strong>Yüklenme Tarihi:</strong> <span id="uploadDate"></span></p>
+                        
+                        <div class="link-box">
+                            <input type="text" id="downloadUrl" readonly>
+                            <button class="copy-button" onclick="copyToClipboard('downloadUrl')">Kopyala</button>
+                        </div>
+
+                        <div class="links">
+                            <a href="#" id="downloadLink" class="button">Dosyayı İndir</a>
+                            <a href="/" class="button secondary">Ana Sayfaya Dön</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Dosya Paylaşım Sitesi. Tüm hakları saklıdır.</p>
+        </footer>
+    </div>
+
+    <script>
+        // URL'den dosya ID'sini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileId = urlParams.get('id');
+
+        if (!fileId) {
+            window.location.href = '/';
+        }
+
+        // Dosya bilgilerini al
+        fetch(`/file/${fileId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('fileName').textContent = data.original_name;
+                document.getElementById('fileSize').textContent = formatFileSize(data.size);
+                document.getElementById('uploadDate').textContent = new Date(data.upload_date).toLocaleString('tr-TR');
+                
+                const downloadUrl = `${window.location.origin}/download/${fileId}`;
+                document.getElementById('downloadUrl').value = downloadUrl;
+                document.getElementById('downloadLink').href = downloadUrl;
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Dosya bilgileri alınamadı!');
+                window.location.href = '/';
+            });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            
+            const button = element.nextElementSibling;
+            button.textContent = 'Kopyalandı!';
+            button.classList.add('copied');
+            
+            setTimeout(() => {
+                button.textContent = 'Kopyala';
+                button.classList.remove('copied');
+            }, 2000);
+        }
+    </script>
+</body>
+</html> 

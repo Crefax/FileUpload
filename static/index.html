@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dosya Paylaşım Sitesi</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dosya Paylaşım Sitesi</h1>
+            <p>Dosyalarınızı güvenle paylaşın</p>
+        </header>
+
+        <main>
+            <div class="upload-container">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="fileInput" hidden>
+                    <div class="upload-content">
+                        <img src="/static/upload-icon.svg" alt="Yükle" class="upload-icon">
+                        <p>Dosyalarınızı buraya sürükleyin veya</p>
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            Dosya Seçin
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress" id="progressBar"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">0%</p>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <h3>Dosya Bilgileri</h3>
+                    <div class="info-content">
+                        <p><strong>Dosya Adı:</strong> <span id="fileName"></span></p>
+                        <p><strong>Boyut:</strong> <span id="fileSize"></span></p>
+                        <div class="links">
+                            <a href="#" id="downloadLink" class="button">İndir</a>
+                            <a href="#" id="deleteLink" class="button delete">Sil</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Dosya Paylaşım Sitesi. Tüm hakları saklıdır.</p>
+        </footer>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const downloadLink = document.getElementById('downloadLink');
+        const deleteLink = document.getElementById('deleteLink');
+
+        // Drag & Drop olayları
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                uploadFile(e.target.files[0]);
+            }
+        });
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = Math.round(percentComplete) + '%';
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        showFileInfo(response);
+                    } catch (e) {
+                        console.error('JSON parse hatası:', e);
+                        alert('Dosya yükleme işlemi başarısız oldu!');
+                    }
+                } else {
+                    console.error('Yükleme hatası:', xhr.status, xhr.statusText);
+                    alert('Dosya yüklenirken bir hata oluştu!');
+                }
+            };
+
+            xhr.onerror = function() {
+                console.error('XHR hatası');
+                alert('Dosya yüklenirken bir hata oluştu!');
+            };
+
+            progressContainer.style.display = 'block';
+            xhr.send(formData);
+        }
+
+        function showFileInfo(fileData) {
+            fileName.textContent = fileData.original_name;
+            fileSize.textContent = formatFileSize(fileData.size);
+            downloadLink.href = `/download.html?id=${fileData.id}`;
+            deleteLink.href = `/delete.html?id=${fileData.id}`;
+            fileInfo.style.display = 'block';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html> 
